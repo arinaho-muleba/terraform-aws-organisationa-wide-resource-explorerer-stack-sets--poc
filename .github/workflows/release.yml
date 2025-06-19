@@ -1,0 +1,12 @@
+name: Auto tag main branch with semantic versioning
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - closed
+      
+jobs:
+  release:
+    if: github.event.pull_request.merged == true && !contains(github.event.pull_request.labels.*.name, 'no release') # detect when pull request is merged since there's no merged event.
+    uses: bbdsoftware/github-shared-workflows/.github/workflows/release.yml@main

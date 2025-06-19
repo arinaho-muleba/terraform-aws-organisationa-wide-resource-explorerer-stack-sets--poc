@@ -1,0 +1,10 @@
+name: Terraform Module CI
+on:
+  pull_request:
+    paths:
+      - '*.tf'
+      - '.config/.terraform-docs.yml'
+
+jobs:
+  release:
+    uses: bbdsoftware/github-shared-workflows/.github/workflows/terraform-module-pr.yml@main

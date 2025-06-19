@@ -1,0 +1,45 @@
+formatter: "markdown table"
+
+version: ">= 0.15.0"
+
+header-from: main.tf
+
+output:
+  file: "README.md"
+  mode: replace
+  template: |-
+    {{ .Content }} 
+    {{- printf "\n" -}}
+
+settings:
+  hide-empty: true
+
+sort:
+  enabled: true
+
+
+content: |-
+  <img src="https://bbdsoftware.com/wp-content/uploads/MServ-Black.png" 
+     width="500" 
+     height="120" />
+
+  {{ .Header }}
+
+  ## Usage
+  ```hcl
+  {{ include "examples/main.tf" }}
+  ```
+  {{ .Requirements }}
+
+  {{ .Providers }}
+
+  {{ .Modules }}
+
+  {{ .Resources }}
+
+  {{ .Inputs }}
+
+  {{ .Outputs }}
+
+  ## Copyright
+  Copyright 2024 - BBD Software
