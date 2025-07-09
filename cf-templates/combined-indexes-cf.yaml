@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: >
-  CFN Stack setting up ResourceExplorer with a Local or Aggregator Index.
-  Deletes existing index and views only in the same region via Lambda before creating new ones.
+  CFN Stack to deploy a Resource Explorer Index and View.
+  Creates an AGGREGATOR or LOCAL index and associates a default view.
 
 Parameters:
   AggregatorIndexRegion:
@@ -12,105 +12,8 @@ Conditions:
   IsAggregatorIndex: !Equals [!Ref "AWS::Region", !Ref AggregatorIndexRegion]
 
 Resources:
-  LambdaExecutionRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: lambda.amazonaws.com
-            Action: sts:AssumeRole
-      Policies:
-        - PolicyName: ResourceExplorerCleanupPolicy
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: Allow
-                Action:
-                  - resource-explorer-2:ListIndexes
-                  - resource-explorer-2:DeleteIndex
-                  - resource-explorer-2:ListViews
-                  - resource-explorer-2:DeleteView
-                Resource: "*"
-              - Effect: Allow
-                Action:
-                  - logs:CreateLogGroup
-                  - logs:CreateLogStream
-                  - logs:PutLogEvents
-                Resource: "*"
-
-  CleanupLambda:
-    Type: AWS::Lambda::Function
-    Properties:
-      Runtime: python3.12
-      Handler: index.lambda_handler
-      Timeout: 60
-      Role: !GetAtt LambdaExecutionRole.Arn
-      Code:
-        ZipFile: |
-          import json
-          import boto3
-          import urllib3
-          import os
-
-          SUCCESS = "SUCCESS"
-          FAILED = "FAILED"
-          http = urllib3.PoolManager()
-
-          def send_response(event, context, status, data, reason=None):
-              response_body = {
-                  'Status': status,
-                  'Reason': reason or f'See logs: {context.log_stream_name}',
-                  'PhysicalResourceId': context.log_stream_name,
-                  'StackId': event['StackId'],
-                  'RequestId': event['RequestId'],
-                  'LogicalResourceId': event['LogicalResourceId'],
-                  'Data': data
-              }
-              encoded = json.dumps(response_body).encode('utf-8')
-              headers = {'content-type': '', 'content-length': str(len(encoded))}
-              http.request('PUT', event['ResponseURL'], body=encoded, headers=headers)
-
-          def lambda_handler(event, context):
-              request_type = event.get("RequestType", "Unknown")
-              client = boto3.client("resource-explorer-2")
-              lambda_region = os.environ.get("AWS_REGION")
-
-              try:
-                  if request_type in ["Create"]:
-                      # Delete existing views in same region
-                      views_response = client.list_views()
-                      views = views_response.get("Views", [])
-                      for view in views:
-                          if isinstance(view, dict) and "ViewArn" in view:
-                              view_region = view["ViewArn"].split(":")[3]
-                              if view_region == lambda_region:
-                                  client.delete_view(ViewArn=view["ViewArn"])
-
-                      # Delete existing indexes in same region
-                      indexes_response = client.list_indexes()
-                      indexes = indexes_response.get("Indexes", [])
-                      for index in indexes:
-                          if isinstance(index, dict) and "Arn" in index:
-                              index_region = index["Arn"].split(":")[3]
-                              if index_region == lambda_region:
-                                  client.delete_index(Arn=index["Arn"])
-
-                  send_response(event, context, SUCCESS, {})
-              except Exception as e:
-                  print(f"Error during cleanup: {e}")
-                  send_response(event, context, FAILED, {}, reason=str(e))
-
-  CleanupResourceExplorer:
-    Type: Custom::CleanupResourceExplorer
-    Properties:
-      ServiceToken: !GetAtt CleanupLambda.Arn
-
   Index:
     Type: AWS::ResourceExplorer2::Index
-    DependsOn: CleanupResourceExplorer
     Properties:
       Type: !If [IsAggregatorIndex, "AGGREGATOR", "LOCAL"]
       Tags:
@@ -136,10 +39,6 @@ Resources:
       ViewArn: !Ref View
 
 Outputs:
-  CleanupLambdaArn:
-    Description: Lambda ARN for cleanup function
-    Value: !GetAtt CleanupLambda.Arn
-
   ResourceExplorerIndexArn:
     Description: ARN of the created Resource Explorer Index
     Value: !GetAtt Index.Arn

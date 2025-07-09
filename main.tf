@@ -1,14 +1,18 @@
+data "aws_organizations_organization" "org" {}
+
 data "aws_regions" "available" {}
 
-locals { #if regions are not provided this will deploy to all enabled regions.
+locals {
   enabled_regions = var.regions != null ? toset(var.regions) : toset([
     for r in data.aws_regions.available.names : r
     if r != "us-gov-east-1" && r != "us-gov-west-1" && r != "cn-north-1" && r != "cn-northwest-1"
   ])
+
+  root_ou_id   = data.aws_organizations_organization.org.roots[0].id
+  target_ou_id = length(var.organization_ou_id) > 0 ? var.organization_ou_id : local.root_ou_id
 }
 
 resource "aws_cloudformation_stack_set" "resource_explorer" {
-
   name             = var.stackset_name
   description      = "Deploys Resource Explorer index and view using CloudFormation"
   permission_model = "SERVICE_MANAGED"
@@ -18,15 +22,11 @@ resource "aws_cloudformation_stack_set" "resource_explorer" {
     retain_stacks_on_account_removal = false
   }
 
-  # call_as = "DELEGATED_ADMIN" 
-
   template_body = file("${path.module}/cf-templates/combined-indexes-cf.yaml")
 
   parameters = {
     AggregatorIndexRegion = var.aggregator_region
   }
-
-  capabilities = ["CAPABILITY_NAMED_IAM"]
 
   operation_preferences {
     region_concurrency_type = "PARALLEL"
@@ -34,11 +34,24 @@ resource "aws_cloudformation_stack_set" "resource_explorer" {
   }
 }
 
-resource "aws_cloudformation_stack_set_instance" "resource_explorer_ou" {
+resource "aws_cloudformation_stack_set_instance" "resource_explorer" {
   for_each       = local.enabled_regions
   stack_set_name = aws_cloudformation_stack_set.resource_explorer.name
+  region         = each.value
+
   deployment_targets {
-    organizational_unit_ids = [var.organization_ou_id]
+    dynamic "accounts" {
+      for_each = var.single_account_mode ? [true] : []
+      content {
+        accounts = [var.management_account_id]
+      }
+    }
+
+    dynamic "organizational_unit_ids" {
+      for_each = var.single_account_mode ? [] : [true]
+      content {
+        organizational_unit_ids = [local.target_ou_id]
+      }
+    }
   }
-  region = each.value
 }

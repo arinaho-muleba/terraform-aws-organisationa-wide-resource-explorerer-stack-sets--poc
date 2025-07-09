@@ -14,6 +14,17 @@ variable "regions" {
   default     = null
 }
 
+variable "single_account_mode" {
+  type        = bool
+  default     = false
+  description = "If true, deploy only to the management account. Otherwise, deploy to the root OU."
+}
+
+variable "management_account_id" {
+  type        = string
+  default     = ""
+  description = "The account ID of the management account. Required if single_account_mode = true."
+}
 
 variable "organization_ou_id" {
   description = "AWS Organization OU ID to deploy the StackSet to (e.g. r-xxxx or ou-xxxx-xxxxxxx)"
