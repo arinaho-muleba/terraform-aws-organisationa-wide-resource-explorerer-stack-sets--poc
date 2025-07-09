@@ -1,27 +1,44 @@
-/*
-* # Terraform Module Template Repository 
-*
-* Template Repository for Terraform modules managed by BBD MServ.
-*/
+data "aws_regions" "available" {}
 
-locals {
-  example = var.example_input
+locals { #if regions are not provided this will deploy to all enabled regions.
+  enabled_regions = var.regions != null ? toset(var.regions) : toset([
+    for r in data.aws_regions.available.names : r
+    if r != "us-gov-east-1" && r != "us-gov-west-1" && r != "cn-north-1" && r != "cn-northwest-1"
+  ])
 }
 
-resource "azurerm_resource_group" "rg" {
-  name     = var.rg_name
-  location = var.rg_location
+resource "aws_cloudformation_stack_set" "resource_explorer" {
+
+  name             = var.stackset_name
+  description      = "Deploys Resource Explorer index and view using CloudFormation"
+  permission_model = "SERVICE_MANAGED"
+
+  auto_deployment {
+    enabled                          = true
+    retain_stacks_on_account_removal = false
+  }
+
+  # call_as = "DELEGATED_ADMIN" 
+
+  template_body = file("${path.module}/cf-templates/combined-indexes-cf.yaml")
+
+  parameters = {
+    AggregatorIndexRegion = var.aggregator_region
+  }
+
+  capabilities = ["CAPABILITY_NAMED_IAM"]
+
+  operation_preferences {
+    region_concurrency_type = "PARALLEL"
+    failure_tolerance_count = 1
+  }
 }
 
-resource "azurerm_virtual_wan" "vwan" {
-  name                = var.vwan_name
-  resource_group_name = var.rg_name
-  location            = var.rg_location
-
-  #optional attributes
-  disable_vpn_encryption            = var.disable_vpn_encryption         
-  allow_branch_to_branch_traffic    = var.allow_branch_to_branch_traffic 
-  office365_local_breakout_category = var.office365_local_breakout_category 
-  type                              = var.vwan_type                      
-  tags                              = var.vwan_tags 
+resource "aws_cloudformation_stack_set_instance" "resource_explorer_ou" {
+  for_each       = local.enabled_regions
+  stack_set_name = aws_cloudformation_stack_set.resource_explorer.name
+  deployment_targets {
+    organizational_unit_ids = [var.organization_ou_id]
+  }
+  region = each.value
 }
