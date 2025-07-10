@@ -28,6 +28,7 @@ variable "management_account_id" {
 
 variable "organization_ou_id" {
   description = "AWS Organization OU ID to deploy the StackSet to (e.g. r-xxxx or ou-xxxx-xxxxxxx)"
+  default     = ""
   type        = string
 }
 
