@@ -34,24 +34,28 @@ resource "aws_cloudformation_stack_set" "resource_explorer" {
   }
 }
 
-resource "aws_cloudformation_stack_set_instance" "resource_explorer" {
-  for_each       = local.enabled_regions
+# ----------------------------
+# Single Account Deployment
+# ----------------------------
+resource "aws_cloudformation_stack_set_instance" "single_account" {
+  for_each       = var.single_account_mode ? local.enabled_regions : {}
   stack_set_name = aws_cloudformation_stack_set.resource_explorer.name
   region         = each.value
 
   deployment_targets {
-    dynamic "accounts" {
-      for_each = var.single_account_mode ? [true] : []
-      content {
-        accounts = [var.management_account_id]
-      }
-    }
+    accounts = [var.management_account_id]
+  }
+}
 
-    dynamic "organizational_unit_ids" {
-      for_each = var.single_account_mode ? [] : [true]
-      content {
-        organizational_unit_ids = [local.target_ou_id]
-      }
-    }
+# ----------------------------
+# Organization Deployment
+# ----------------------------
+resource "aws_cloudformation_stack_set_instance" "organization" {
+  for_each       = var.single_account_mode ? {} : local.enabled_regions
+  stack_set_name = aws_cloudformation_stack_set.resource_explorer.name
+  region         = each.value
+
+  deployment_targets {
+    organizational_unit_ids = [local.target_ou_id]
   }
 }
