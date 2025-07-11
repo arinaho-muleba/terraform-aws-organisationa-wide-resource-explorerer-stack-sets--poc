@@ -31,7 +31,10 @@ resource "aws_cloudformation_stack_set" "resource_explorer" {
 
   parameters = {
     AggregatorIndexRegion = var.aggregator_region
+    ManagementAccountId   = var.management_account_id
+    OrganizationArn       = data.aws_organizations_organization.org.arn
   }
+
 
   operation_preferences {
     region_concurrency_type = "PARALLEL"

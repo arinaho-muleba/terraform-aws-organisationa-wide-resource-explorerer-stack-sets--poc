@@ -2,20 +2,31 @@ AWSTemplateFormatVersion: "2010-09-09"
 Description: >
   CFN Stack to deploy a Resource Explorer Index and View.
   Creates an AGGREGATOR or LOCAL index and associates a default view.
+  Supports organization-wide view only in aggregator region + management account.
 
 Parameters:
   AggregatorIndexRegion:
     Type: String
     Description: Region where the aggregator index will be deployed.
 
+  ManagementAccountId:
+    Type: String
+    Description: The AWS Account ID of the management (organization master) account.
+
+  OrganizationArn:
+    Type: String
+    Description: The ARN of the AWS Organization (e.g. arn:aws:organizations::111122223333:organization/o-xxxxxxxxxx)
+
 Conditions:
-  IsAggregatorIndex: !Equals [!Ref "AWS::Region", !Ref AggregatorIndexRegion]
+  IsAggregatorRegion: !Equals [!Ref "AWS::Region", !Ref AggregatorIndexRegion]
+  IsManagementAccount: !Equals [!Ref "AWS::AccountId", !Ref ManagementAccountId]
+  DeployAggregatorIndex: !And [!Condition IsAggregatorRegion, !Condition IsManagementAccount]
 
 Resources:
   Index:
     Type: AWS::ResourceExplorer2::Index
     Properties:
-      Type: !If [IsAggregatorIndex, "AGGREGATOR", "LOCAL"]
+      Type: !If [DeployAggregatorIndex, "AGGREGATOR", "LOCAL"]
       Tags:
         Purpose: ResourceExplorer CFN Stack
 
@@ -24,11 +35,15 @@ Resources:
     DependsOn: Index
     Properties:
       ViewName: !If
-        - IsAggregatorIndex
-        - "All-resources-across-AWS-regions"
+        - DeployAggregatorIndex
+        - "Organization-wide-resource-view"
         - !Sub "Regional-resource-view-${AWS::Region}"
       IncludedProperties:
         - Name: tags
+      Scope: !If
+        - DeployAggregatorIndex
+        - !Ref OrganizationArn
+        - !Sub "arn:aws:iam::${AWS::AccountId}:root"
       Tags:
         Purpose: ResourceExplorer CFN Stack
 
@@ -45,7 +60,4 @@ Outputs:
 
   ResourceExplorerViewName:
     Description: Name of the Resource Explorer View created by this stack
-    Value: !If
-      - IsAggregatorIndex
-      - "All-resources-across-AWS-regions"
-      - !Sub "Regional-resource-view-${AWS::Region}"
+    Value: !Ref View
