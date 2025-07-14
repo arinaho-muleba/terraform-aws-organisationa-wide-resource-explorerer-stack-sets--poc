@@ -11,7 +11,7 @@ variable "aggregator_region" {
 variable "regions" {
   type        = list(string)
   description = "Optional list of AWS regions to deploy to. If not set, all enabled commercial regions are used."
-  default     = null
+  default     = []
 }
 
 variable "single_account_mode" {

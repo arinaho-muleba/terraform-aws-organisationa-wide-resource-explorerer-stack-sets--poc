@@ -4,7 +4,7 @@ data "aws_regions" "available" {}
 
 locals {
   # Determine enabled regions from input or from available commercial regions
-  enabled_regions = var.regions != null ? toset(var.regions) : toset([
+  enabled_regions = var.regions != [] ? toset(var.regions) : toset([
     for r in data.aws_regions.available.names : r
     if r != "us-gov-east-1" && r != "us-gov-west-1" && r != "cn-north-1" && r != "cn-northwest-1"
   ])
