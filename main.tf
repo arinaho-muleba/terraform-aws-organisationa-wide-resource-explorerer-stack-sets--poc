@@ -46,12 +46,12 @@ resource "aws_cloudformation_stack_set" "resource_explorer" {
 # ----------------------------
 # Management account stack deployment | Single account
 # ----------------------------
-resource "aws_cloudformation_stack_set_instance" "single_account" {
-  for_each       = local.region_map
-  stack_set_name = aws_cloudformation_stack_set.resource_explorer.name
-  region         = each.value
-  account_id     = var.management_account_id
-}
+# resource "aws_cloudformation_stack_set_instance" "single_account" {
+#   for_each       = local.region_map
+#   stack_set_name = aws_cloudformation_stack_set.resource_explorer.name
+#   region         = each.value
+#   account_id     = var.management_account_id
+# }
 
 # ----------------------------
 # Organization Deployment
