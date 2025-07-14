@@ -20,7 +20,8 @@ Parameters:
 Conditions:
   IsAggregatorRegion: !Equals [!Ref "AWS::Region", !Ref AggregatorIndexRegion]
   IsManagementAccount: !Equals [!Ref "AWS::AccountId", !Ref ManagementAccountId]
-  DeployAggregatorIndex: !And [!Condition IsAggregatorRegion, !Condition IsManagementAccount]
+  DeployAggregatorOrgIndex: !And [!Condition IsAggregatorRegion, !Condition IsManagementAccount]
+  DeployAggregatorIndex: !Condition IsAggregatorRegion  
 
 Resources:
   Index:
@@ -35,13 +36,13 @@ Resources:
     DependsOn: Index
     Properties:
       ViewName: !If
-        - DeployAggregatorIndex
+        - DeployAggregatorOrgIndex
         - "Organization-wide-resource-view"
         - !Sub "Regional-resource-view-${AWS::Region}"
       IncludedProperties:
         - Name: tags
       Scope: !If
-        - DeployAggregatorIndex
+        - DeployAggregatorOrgIndex
         - !Ref OrganizationArn
         - !Sub "arn:aws:iam::${AWS::AccountId}:root"
       Tags:
