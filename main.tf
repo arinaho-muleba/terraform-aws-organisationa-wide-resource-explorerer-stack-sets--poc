@@ -44,7 +44,7 @@ resource "aws_cloudformation_stack_set" "org_wide" {
   }
 
   tags = {
-    Owner     = "ResourceExplorer"
+    Owner     = "BBD MServ"
     Terraform = "true"
   }
 
