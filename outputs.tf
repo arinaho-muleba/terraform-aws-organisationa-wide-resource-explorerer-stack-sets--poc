@@ -1,9 +1,22 @@
-output "org_stackset_name" {
-  description = "Name of the CloudFormation StackSet deployed to the organization (OU)"
-  value       = try(aws_cloudformation_stack_set.org_wide[0].name, null)
+output "stackset_name" {
+  description = "Name of the deployed CloudFormation StackSet"
+  value       = aws_cloudformation_stack_set.org_wide.name
 }
 
-# output "management_stackset_name" {
-#   description = "Name of the CloudFormation StackSet deployed to the management account"
-#   value       = try(aws_cloudformation_stack_set.mgmt_account[0].name, null)
-# }
+output "enabled_regions" {
+  description = "Regions where StackSet instances were deployed"
+  value       = local.enabled_regions
+}
+
+output "target_organizational_unit_id" {
+  description = "The OU ID where the StackSet was deployed"
+  value       = local.target_ou_id
+}
+
+output "stack_set_instances" {
+  description = "Map of regions to deployed StackSet instances"
+  value = {
+    for region, instance in aws_cloudformation_stack_set_instance.org_instances :
+    region => instance.id
+  }
+}
