@@ -39,8 +39,8 @@ resource "aws_cloudformation_stack_set" "org_wide" {
 
   operation_preferences {
     region_concurrency_type      = "PARALLEL"
-    max_concurrent_percentage    = 50
-    failure_tolerance_percentage = 49
+    max_concurrent_percentage    = 100
+    failure_tolerance_percentage = 25
   }
 
   tags = {
