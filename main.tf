@@ -10,17 +10,15 @@ locals {
 
   root_ou_id   = data.aws_organizations_organization.org.roots[0].id
   target_ou_id = length(var.organization_ou_id) > 0 ? var.organization_ou_id : local.root_ou_id
-
-  region_map = { for r in local.enabled_regions : r => r }
+  region_map   = { for r in local.enabled_regions : r => r }
 }
 
 # ----------------------------
-# StackSet for OU-wide (excluding management account)
+# StackSet for deploying additional indexes to the enabled regions not supported by quick setup
 # ----------------------------
 resource "aws_cloudformation_stack_set" "org_wide" {
-  count            = var.single_account_mode ? 0 : 1
   name             = "${var.stackset_name}-org-wide"
-  description      = "Deploy Resource Explorer org-wide (excludes management account)"
+  description      = "Deploy Resource Explorer indexes and views org-wide "
   permission_model = "SERVICE_MANAGED"
 
   auto_deployment {
@@ -40,16 +38,23 @@ resource "aws_cloudformation_stack_set" "org_wide" {
     region_concurrency_type = "PARALLEL"
     failure_tolerance_count = 1
   }
+
+  tags = {
+    Owner     = "ResourceExplorer"
+    Terraform = "true"
+  }
+
 }
 
 resource "aws_cloudformation_stack_set_instance" "org_instances" {
-  count          = var.single_account_mode ? 0 : 1
-  for_each       = var.single_account_mode ? {} : local.region_map
-  stack_set_name = aws_cloudformation_stack_set.org_wide[0].name
+  for_each       = local.region_map
+  stack_set_name = aws_cloudformation_stack_set.org_wide.name
   region         = each.value
 
   deployment_targets {
     organizational_unit_ids = [local.target_ou_id]
   }
+
+  depends_on = [aws_cloudformation_stack_set.org_wide]
 }
 
