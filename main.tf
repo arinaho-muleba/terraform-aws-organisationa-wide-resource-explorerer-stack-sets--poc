@@ -3,10 +3,13 @@ data "aws_organizations_organization" "org" {}
 data "aws_regions" "available" {}
 
 locals {
-  enabled_regions = var.regions != [] ? toset(var.regions) : toset([
-    for r in data.aws_regions.available.names : r
-    if r != "us-gov-east-1" && r != "us-gov-west-1" && r != "cn-north-1" && r != "cn-northwest-1"
+  enabled_regions = (
+    can(length(var.regions)) && length(var.regions) > 0
+    ) ? toset(var.regions) : toset([
+      for r in data.aws_regions.available.names : r
+      if !contains(["us-gov-east-1", "us-gov-west-1", "cn-north-1", "cn-northwest-1"], r)
   ])
+
 
   root_ou_id   = data.aws_organizations_organization.org.roots[0].id
   target_ou_id = length(var.organization_ou_id) > 0 ? var.organization_ou_id : local.root_ou_id
