@@ -61,12 +61,16 @@ resource "aws_cloudformation_stack_set_instance" "org_instances" {
   depends_on = [aws_cloudformation_stack_set.org_wide]
 }
 
-# -------------------------------------------------------
-# Deploy the organisation-wide view in management account
-# -------------------------------------------------------
+# ---------------------------------------------------------------
+# Deploy the organisation-wide index & view in management account
+# ---------------------------------------------------------------
+resource "aws_resourceexplorer2_index" "aggregator" {
+  type = "AGGREGATOR"
+}
 
-module "resource-explorer-view" {
-  source = "git::https://github.com/bbdsoftware/terraform-aws-resource-explorer.git//modules/view"
-  name   = "OrganizationWideView"
-  scope  = data.aws_organizations_organization.org.arn
+resource "aws_resourceexplorer2_view" "org_wide" {
+  name         = "OrganizationWideView"
+  scope        = data.aws_organizations_organization.org.arn
+  default_view = true
+  depends_on   = [aws_resourceexplorer2_index.aggregator]
 }
