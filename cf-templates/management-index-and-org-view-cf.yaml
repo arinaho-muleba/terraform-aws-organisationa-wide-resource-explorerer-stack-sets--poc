@@ -18,7 +18,7 @@ Resources:
     Properties:
       Type: AGGREGATOR
       Tags:
-        Purpose: ResourceExplorer CFN Stack
+        Purpose: ResourceExplorer CFN management Stack
 
   View:
     Type: AWS::ResourceExplorer2::View
@@ -29,7 +29,7 @@ Resources:
         - Name: tags
       Scope: !Ref OrganizationArn
       Tags:
-        Purpose: ResourceExplorer CFN Stack
+        Purpose: ResourceExplorer CFN management Stack
 
   DefaultViewAssociation:
     Type: AWS::ResourceExplorer2::DefaultViewAssociation
