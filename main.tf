@@ -17,7 +17,7 @@ locals {
 }
 
 # ----------------------------
-# StackSet for deploying additional indexes to the enabled regions not supported by quick setup
+# StackSet for deploying additional indexes 
 # ----------------------------
 resource "aws_cloudformation_stack_set" "org_wide" {
   name             = "${var.stackset_name}-org-wide"
@@ -70,7 +70,7 @@ resource "aws_resourceexplorer2_index" "aggregator" {
 
 resource "aws_resourceexplorer2_view" "org_wide" {
   name         = "OrganizationWideView"
-  scope        = data.aws_organizations_organization.org.arn
   default_view = true
+  scope        = data.aws_organizations_organization.org
   depends_on   = [aws_resourceexplorer2_index.aggregator]
 }
