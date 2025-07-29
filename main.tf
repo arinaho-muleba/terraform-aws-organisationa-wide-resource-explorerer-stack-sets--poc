@@ -39,8 +39,8 @@ resource "aws_cloudformation_stack_set" "org_wide" {
 
   operation_preferences {
     region_concurrency_type = "PARALLEL"
-    max_concurrent_count    = 10
-    failure_tolerance_count = 2
+    max_concurrent_count    = 5
+    failure_tolerance_count = 4
   }
 
 
