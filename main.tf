@@ -70,7 +70,7 @@ resource "aws_resourceexplorer2_index" "aggregator" {
 
 resource "aws_resourceexplorer2_view" "org_wide" {
   name         = "OrganizationWideView"
-  scope        = data.aws_organizations_organization.org
+  scope        = data.aws_organizations_organization.org.arn
   default_view = true
   depends_on   = [aws_resourceexplorer2_index.aggregator]
 }
