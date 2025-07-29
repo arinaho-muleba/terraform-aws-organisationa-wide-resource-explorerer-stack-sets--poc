@@ -1,0 +1,42 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  Deploys a Resource Explorer AGGREGATOR index and an organization-scoped view.
+
+Parameters:
+  OrganizationArn:
+    Type: String
+    Description: The ARN of the AWS Organization (e.g. arn:aws:organizations::111122223333:organization/o-xxxxxxxxxx)
+
+Resources:
+  Index:
+    Type: AWS::ResourceExplorer2::Index
+    Properties:
+      Type: AGGREGATOR
+      Tags:
+        Purpose: ResourceExplorer CFN Stack
+
+  View:
+    Type: AWS::ResourceExplorer2::View
+    DependsOn: Index
+    Properties:
+      ViewName: Organization-wide-resource-view
+      IncludedProperties:
+        - Name: tags
+      Scope: !Ref OrganizationArn
+      Tags:
+        Purpose: ResourceExplorer CFN Stack
+
+  DefaultViewAssociation:
+    Type: AWS::ResourceExplorer2::DefaultViewAssociation
+    DependsOn: View
+    Properties:
+      ViewArn: !Ref View
+
+Outputs:
+  ResourceExplorerIndexArn:
+    Description: ARN of the created Resource Explorer Index
+    Value: !GetAtt Index.Arn
+
+  ResourceExplorerViewName:
+    Description: Name of the Resource Explorer View created by this stack
+    Value: !Ref View

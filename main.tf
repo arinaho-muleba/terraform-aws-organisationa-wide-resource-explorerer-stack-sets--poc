@@ -64,13 +64,28 @@ resource "aws_cloudformation_stack_set_instance" "org_instances" {
 # ---------------------------------------------------------------
 # Deploy the organisation-wide index & view in management account
 # ---------------------------------------------------------------
-resource "aws_resourceexplorer2_index" "aggregator" {
-  type = "AGGREGATOR"
-}
+# resource "aws_resourceexplorer2_index" "aggregator" { <-- will use this once we can override the provider version
+#   type = "AGGREGATOR"
+# }
 
-resource "aws_resourceexplorer2_view" "org_wide" {
-  name         = "OrganizationWideView"
-  scope        = data.aws_organizations_organization.org.arn
-  default_view = true
-  depends_on   = [aws_resourceexplorer2_index.aggregator]
+# resource "aws_resourceexplorer2_view" "org_wide" {
+#   name         = "OrganizationWideView"
+#   scope        = data.aws_organizations_organization.org.arn
+#   default_view = true
+#   depends_on   = [aws_resourceexplorer2_index.aggregator]
+# }
+
+resource "aws_cloudformation_stack" "resource_explorer_stack" {
+  name          = "resource-explorer-org-wide-management-stack"
+  template_body = file("${path.module}/cf-templates/management-index-and-org-view-cf.yaml")
+
+  parameters = {
+    OrganizationArn = data.aws_organizations_organization.org.arn
+    ViewName        = "OrganizationWideView"
+  }
+
+  capabilities = ["CAPABILITY_NAMED_IAM"]
+  tags = {
+    Purpose = "ResourceExplorer Deployment"
+  }
 }
