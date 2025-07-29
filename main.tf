@@ -38,10 +38,11 @@ resource "aws_cloudformation_stack_set" "org_wide" {
   }
 
   operation_preferences {
-    region_concurrency_type      = "PARALLEL"
-    max_concurrent_percentage    = 100
-    failure_tolerance_percentage = 99
+    region_concurrency_type = "PARALLEL"
+    max_concurrent_count    = 10
+    failure_tolerance_count = 2
   }
+
 
   tags = {
     Terraform = "true"
@@ -76,3 +77,18 @@ resource "aws_resourceexplorer2_view" "org_wide" {
 }
 
 
+# -------------Cloud-formation-workaround-------------
+# resource "aws_cloudformation_stack" "resource_explorer_stack" {}
+#   name          = "resource-explorer-org-wide-management-stack"
+#   template_body = file("${path.module}/cf-templates/management-index-and-org-view-cf.yaml")
+
+#   parameters = {
+#     OrganizationArn = data.aws_organizations_organization.org.arn
+#     ViewName        = "OrganizationWideView"
+#   }
+
+#   capabilities = ["CAPABILITY_NAMED_IAM"]
+#   tags = {
+#     Purpose = "ResourceExplorer Deployment"
+#   }
+# }
