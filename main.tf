@@ -16,9 +16,9 @@ locals {
   region_map   = { for r in local.enabled_regions : r => r }
 }
 
-# ----------------------------
-# StackSet for deploying additional indexes 
-# ----------------------------
+# ------------------------------
+# StackSet for deploying indexes 
+# ------------------------------
 resource "aws_cloudformation_stack_set" "org_wide" {
   name             = "${var.stackset_name}-org-wide"
   description      = "Deploy Resource Explorer indexes and views org-wide "
@@ -36,36 +36,28 @@ resource "aws_cloudformation_stack_set" "org_wide" {
     ManagementAccountId   = var.management_account_id
     OrganizationArn       = data.aws_organizations_organization.org.arn
   }
-
   operation_preferences {
     region_concurrency_type = "PARALLEL"
-    max_concurrent_count    = 5
-    failure_tolerance_count = 4
   }
-
-
-  tags = {
-    Terraform = "true"
+  managed_execution {
+    active = true
   }
-
 }
 
 resource "aws_cloudformation_stack_set_instance" "org_instances" {
   for_each       = local.region_map
   stack_set_name = aws_cloudformation_stack_set.org_wide.name
   region         = each.value
-
   deployment_targets {
     organizational_unit_ids = [local.target_ou_id]
   }
-
   depends_on = [aws_cloudformation_stack_set.org_wide]
 }
 
 # ---------------------------------------------------------------
 # Deploy the organisation-wide index & view in management account
 # ---------------------------------------------------------------
-resource "aws_resourceexplorer2_index" "aggregator" { # <-- will use this once we can override the provider version
+resource "aws_resourceexplorer2_index" "aggregator" {
   type = "AGGREGATOR"
 }
 
@@ -75,20 +67,3 @@ resource "aws_resourceexplorer2_view" "org_wide" {
   default_view = true
   depends_on   = [aws_resourceexplorer2_index.aggregator]
 }
-
-
-# -------------Cloud-formation-workaround-------------
-# resource "aws_cloudformation_stack" "resource_explorer_stack" {}
-#   name          = "resource-explorer-org-wide-management-stack"
-#   template_body = file("${path.module}/cf-templates/management-index-and-org-view-cf.yaml")
-
-#   parameters = {
-#     OrganizationArn = data.aws_organizations_organization.org.arn
-#     ViewName        = "OrganizationWideView"
-#   }
-
-#   capabilities = ["CAPABILITY_NAMED_IAM"]
-#   tags = {
-#     Purpose = "ResourceExplorer Deployment"
-#   }
-# }
