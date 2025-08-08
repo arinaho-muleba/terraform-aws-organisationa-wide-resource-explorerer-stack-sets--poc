@@ -37,7 +37,8 @@ resource "aws_cloudformation_stack_set" "org_wide" {
     OrganizationArn       = data.aws_organizations_organization.org.arn
   }
   operation_preferences {
-    region_concurrency_type = "PARALLEL"
+    region_concurrency_type   = "PARALLEL"
+    max_concurrent_percentage = 100
   }
   managed_execution {
     active = true
